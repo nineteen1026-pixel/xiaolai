@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>采购订单管理系统</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>📦 采购订单管理系统</h1>
+      <div class="header-subtitle">Purchase Order Management System</div>
+    </div>
+    <button class="btn btn-primary" onclick="OrderForm.open()">+ 新建订单</button>
+  </header>
+
+  <main class="main-content">
+    <div class="summary-container" id="summaryContainer"></div>
+
+    <section class="list-section">
+      <div class="list-header">
+        <h2>采购订单列表</h2>
+      </div>
+      <div id="filterBarContainer"></div>
+      <div id="orderListContainer"></div>
+    </section>
+  </main>
+
+  <div id="formOverlay"></div>
+
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal-panel">
+      <div class="detail-content"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="flowModal">
+    <div class="modal-panel">
+      <div class="flow-content"></div>
+    </div>
+  </div>
+
+  <script src="js/mock-data.js"></script>
+  <script src="js/status.js"></script>
+  <script src="js/form.js"></script>
+  <script src="js/list.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('active');
+      });
+    });
+  </script>
+</body>
+</html>
