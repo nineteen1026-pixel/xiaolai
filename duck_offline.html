@@ -25,7 +25,14 @@
   #stage{position:absolute;inset:0;z-index:1;transform-origin:50% 92%;}
   #tilt{width:100%;height:100%;transform-origin:50% 92%;will-change:transform;}
   #squash{width:100%;height:100%;transform-origin:50% 100%;will-change:transform;}
-  #duckImg{width:100%;height:100%;display:block;pointer-events:none;will-change:transform;}
+  #duckImg{width:100%;height:100%;display:block;pointer-events:none;will-change:transform;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;}
+  #runStrip{position:absolute;inset:0;display:none;pointer-events:none;
+    background-repeat:no-repeat;background-position:0 0;
+    image-rendering:pixelated;image-rendering:crisp-edges;}
+  @keyframes petRunCycle{
+    from{background-position:0 0;}
+    to{background-position:var(--run-end, -700%) 0;}
+  }
   #bubble{position:fixed;z-index:2147483647;display:none;background:#fff;padding:7px 13px;
     border-radius:14px;font-size:13px;color:#333;white-space:nowrap;
     box-shadow:0 6px 18px -6px rgba(0,0,0,.3);pointer-events:none;}
@@ -37,8 +44,10 @@
   <div class="hint" id="hint">🦆 可达鸭 · 可以拖动它</div>
   <div id="pet">
     <div id="shadow"></div>
-    <div id="stage"><div id="tilt"><div id="squash">
+    <div id="stage"><div id="tilt"><div id="squash" style="position:relative;">
       <img id="duckImg" />
+      <canvas id="petCanvas" width="150" height="150" style="display:none;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none;"></canvas>
+      <div id="runStrip"></div>
     </div></div></div>
   </div>
   <div id="bubble"></div>
@@ -97,8 +106,16 @@
     function killAll(){
       idleTweens.forEach(t=>t.kill());idleTweens=[];
       if(actionTL){actionTL.kill();actionTL=null;}
-      gsap.killTweensOf([pet,stage,tilt,squash,img,shadow]);
-      gsap.set([stage,tilt],{rotation:0,scaleX:1});
+      if(window.__animTimer){clearInterval(window.__animTimer);window.__animTimer=null;}
+      if(window.__animRaf){cancelAnimationFrame(window.__animRaf);window.__animRaf=null;}
+      var rs=document.getElementById('runStrip');
+      if(rs){rs.style.display='none';rs.style.animation='none';rs.style.backgroundImage='none';}
+      var cv=document.getElementById('petCanvas');
+      if(cv){cv.style.display='none';}
+      if(img){img.style.visibility='visible';img.style.display='block';}
+      // 注意:不要重置 stage.scaleX,否则左右朝向会闪一下
+      gsap.killTweensOf([pet,tilt,squash,img,shadow]);
+      gsap.set(tilt,{rotation:0});
       gsap.set(squash,{scaleX:1,scaleY:1});
       gsap.set(img,{scaleX:1,scaleY:1,y:0});
       gsap.set(pet,{y:0});
@@ -108,6 +125,7 @@
     // 待机:呼吸+钟摆+浮动+随机眨眼(整图压扁模拟)
     function startIdle(){
       killAll();state='idle';
+      if(window.__petAnims&&window.__petAnims.idle){img.src=window.__petAnims.idle;}
       idleTweens.push(gsap.to(img,{scaleY:0.97,scaleX:1.02,duration:2.4,ease:'sine.inOut',repeat:-1,yoyo:true}));
       idleTweens.push(gsap.to(tilt,{rotation:1.5,duration:3.2,ease:'sine.inOut',repeat:-1,yoyo:true}));
       idleTweens.push(gsap.to(pet,{y:-3,duration:2.8,ease:'sine.inOut',repeat:-1,yoyo:true}));
@@ -122,12 +140,118 @@
       })();
     }
 
-    // 走路:每步弹跳+身体摆+影子联动+跟随重叠
+    // 走路:有跑步帧的角色用双脚交替;其他角色保留弹跳步态
     function walkTo(tx,ty,arrive){
-      killAll();state='walk';
+      const runFrames=(window.__petAnims&&window.__petAnims.run)||null;
+      const human=!!(runFrames&&runFrames.length);
+      // 拟人跑用软停止,避免 killAll 重置造成闪现
+      if(human){
+        idleTweens.forEach(t=>t.kill());idleTweens=[];
+        if(actionTL){actionTL.kill();actionTL=null;}
+        if(window.__animTimer){clearInterval(window.__animTimer);window.__animTimer=null;}
+        if(window.__animRaf){cancelAnimationFrame(window.__animRaf);window.__animRaf=null;}
+        gsap.killTweensOf([pet,tilt,squash,shadow]);
+        gsap.set(tilt,{rotation:0});
+        gsap.set(pet,{y:0});
+      } else {
+        killAll();
+      }
+      state='walk';
       const r=pet.getBoundingClientRect();
       const faceLeft=tx<r.left;
       gsap.set(stage,{scaleX:faceLeft?-1:1});
+      if(human){
+        // 先定朝向再换帧,避免左右翻转闪现
+        gsap.set(stage,{scaleX:faceLeft?-1:1});
+        pet.style.filter='none';
+        const anims=window.__petAnims||{};
+        const n=anims.runFrameCount||8;
+        const stripUrl=anims.runStrip;
+        const frames=runFrames||[];
+        const canvas=document.getElementById('petCanvas');
+        const startCanvasCycle=(stripImg)=>{
+          if(!canvas) return false;
+          const ctx=canvas.getContext('2d');
+          const fw=stripImg.naturalWidth/n;
+          const fh=stripImg.naturalHeight;
+          canvas.width=Math.max(1,Math.round(fw));
+          canvas.height=Math.max(1,Math.round(fh));
+          img.style.display='none';
+          canvas.style.display='block';
+          let fi=0;
+          const frameMs=120;
+          let last=performance.now();
+          const draw=()=>{
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.imageSmoothingEnabled=false;
+            ctx.drawImage(stripImg, fi*fw, 0, fw, fh, 0, 0, canvas.width, canvas.height);
+          };
+          draw();
+          const tick=(now)=>{
+            if(state!=='walk'){window.__animRaf=null;return;}
+            if(now-last>=frameMs){
+              last=now;
+              fi=(fi+1)%n;
+              draw();
+            }
+            window.__animRaf=requestAnimationFrame(tick);
+          };
+          window.__animRaf=requestAnimationFrame(tick);
+          return true;
+        };
+        const startImgCycle=()=>{
+          if(!window.__runImgs || window.__runImgs._key!==(frames[0]||'')){
+            window.__runImgs=(frames||[]).map(s=>{const i=new Image(); i.src=s; return i;});
+            window.__runImgs._key=frames[0]||'';
+          }
+          const bitmaps=window.__runImgs;
+          if(!bitmaps.length) return;
+          let fi=0;
+          img.style.display='block';
+          img.style.visibility='visible';
+          if(canvas) canvas.style.display='none';
+          img.src=bitmaps[0].src;
+          const frameMs=120;
+          let last=performance.now();
+          const tick=(now)=>{
+            if(state!=='walk'){window.__animRaf=null;return;}
+            if(now-last>=frameMs){
+              last=now;
+              fi=(fi+1)%bitmaps.length;
+              img.src=bitmaps[fi].src;
+            }
+            window.__animRaf=requestAnimationFrame(tick);
+          };
+          window.__animRaf=requestAnimationFrame(tick);
+        };
+        // 优先逐帧切图,避免 canvas 切换导致视觉缩小/停帧;精灵条作后备
+        if(frames && frames.length){
+          startImgCycle();
+        } else if(stripUrl){
+          const stripImg=new Image();
+          stripImg.onload=()=>{ if(!startCanvasCycle(stripImg)) startImgCycle(); };
+          stripImg.onerror=()=>startImgCycle();
+          stripImg.src=stripUrl;
+        } else {
+          startImgCycle();
+        }
+        actionTL=gsap.timeline({repeat:-1});
+        actionTL.to(shadow,{scaleX:0.92,opacity:0.8,duration:0.12,ease:'sine.inOut',yoyo:true,repeat:1},0);
+        actionTL.to(img,{y:-2,duration:0.12,ease:'sine.inOut',yoyo:true,repeat:1},0);
+        const dist=Math.hypot(tx-r.left,ty-r.top);
+        const dur=Math.max(1.4,dist/110);
+        gsap.to(pet,{left:tx,top:ty,duration:dur,ease:'none',onComplete(){
+          if(window.__animRaf){cancelAnimationFrame(window.__animRaf);window.__animRaf=null;}
+          if(canvas){canvas.style.display='none';}
+          img.style.display='block';
+          if(window.__petAnims&&window.__petAnims.idle) img.src=window.__petAnims.idle;
+          gsap.set(stage,{scaleX:1});
+          pet.style.filter='';
+          killAll();
+          arrive&&arrive();
+        }});
+        return;
+      }
       const stepDur=0.36;
       actionTL=gsap.timeline({repeat:-1});
       actionTL.to(squash,{scaleY:0.92,scaleX:1.06,duration:stepDur*0.3,ease:'power2.in'},0)
@@ -276,7 +400,8 @@
       if(idleSec>14 && Math.random()<0.45){ busy=true;startSleep();lastInteract=Date.now();setTimeout(()=>busy=false,500);return; }
       if(idleSec>1.5 && Math.random()<0.6){
         busy=true;
-        const a=ACTS[(Math.random()*ACTS.length)|0];
+        let a=ACTS[(Math.random()*ACTS.length)|0];
+        if((window.__moveStyle==='human'||(window.__petAnims&&window.__petAnims.run)) && a==='jump') a='walk';
         const back=()=>{busy=false;lastInteract=Date.now();startIdle();};
         if(a==='walk'){
           const tx=MARGIN+Math.random()*(VW()-DW-MARGIN*2);
@@ -353,6 +478,8 @@
     window.addEventListener('mouseup',onUp);window.addEventListener('touchend',onUp);
 
     pet.style.left=(VW()/2-DW/2)+'px';pet.style.top=(VH()-DH-50)+'px';
+    window.walkTo=walkTo;window.startIdle=startIdle;window.doJump=doJump;
+    window.startSleep=startSleep;window.say=say;window.decide=decide;
     startIdle();
     setTimeout(()=>hint.classList.add('fade'),6000);
     hint.addEventListener('click',()=>hint.classList.add('fade'));

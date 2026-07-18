@@ -727,6 +727,185 @@
           "🔮"
         ]
       }
+    },
+    "coder": {
+      "name": "码仔",
+      "nameEn": "Coder",
+      "img": "assets/pets/coder.png",
+      "emoji": "💻",
+      "moveStyle": "human",
+      "anims": {
+        "idle": "assets/pets/coder/idle.png",
+        "runStrip": "assets/pets/coder/run-strip.png",
+        "runFrameCount": 8,
+        "run": [
+          "assets/pets/coder/run-0.png",
+          "assets/pets/coder/run-1.png",
+          "assets/pets/coder/run-2.png",
+          "assets/pets/coder/run-3.png",
+          "assets/pets/coder/run-4.png",
+          "assets/pets/coder/run-5.png",
+          "assets/pets/coder/run-6.png",
+          "assets/pets/coder/run-7.png"
+        ]
+      },
+      "lines": {
+        "happy": [
+          "编译通过了!",
+          "又修好一个 bug!",
+          "今天手感不错~",
+          "代码跑起来了!",
+          "嘿嘿,搞定!",
+          "绿勾勾真好看"
+        ],
+        "bored": [
+          "在等编译…",
+          "卡住了…",
+          "这个需求怎么写?",
+          "发呆中…",
+          "刷新一下试试",
+          "脑内循环中"
+        ],
+        "sleep": [
+          "zzZ…(键盘还亮着)",
+          "眯一会…",
+          "先 commit 再睡",
+          "梦里还在写代码"
+        ],
+        "wake": [
+          "早安,开工!",
+          "电脑开机了!",
+          "又是写代码的一天",
+          "咖啡呢?",
+          "精神满格!"
+        ],
+        "hungry": [
+          "好饿…先点个外卖",
+          "边写边吃?",
+          "肚子在报错了",
+          "想喝奶茶…",
+          "能量不够了"
+        ],
+        "curious": [
+          "这是什么 bug?",
+          "咦,还能这样?",
+          "让我看看文档",
+          "有意思!",
+          "为什么会报这个错?"
+        ],
+        "greet": [
+          "你好呀!",
+          "一起写代码吗?",
+          "嗨!码仔上线~",
+          "你好~",
+          "欢迎来桌面!"
+        ],
+        "excited": [
+          "上线成功!",
+          "太爽了!",
+          "一气呵成!",
+          "今天状态爆表!",
+          "冲!"
+        ],
+        "sad": [
+          "又红了…",
+          "合并冲突好难受",
+          "谁改坏了…",
+          "需求又变了…",
+          "心情像堆栈溢出"
+        ],
+        "sing": [
+          "敲敲敲~哒哒哒~",
+          "哔哔哔~编译中~",
+          "💻"
+        ]
+      }
+    },
+    "xiaolai": {
+      "name": "小来",
+      "nameEn": "XiaoLai",
+      "img": "assets/pets/xiaolai.png",
+      "emoji": "🌸",
+      "moveStyle": "human",
+      "anims": {
+        "idle": "assets/pets/xiaolai/idle.png",
+        "runStrip": "assets/pets/xiaolai/run-strip.png",
+        "runFrameCount": 7,
+        "run": [
+          "assets/pets/xiaolai/run-0.png",
+          "assets/pets/xiaolai/run-1.png",
+          "assets/pets/xiaolai/run-2.png",
+          "assets/pets/xiaolai/run-3.png",
+          "assets/pets/xiaolai/run-4.png",
+          "assets/pets/xiaolai/run-5.png",
+          "assets/pets/xiaolai/run-6.png"
+        ]
+      },
+      "lines": {
+        "happy": [
+          "嘿嘿~",
+          "今日有好风~",
+          "好开心呀",
+          "小来来啦~",
+          "心情像花开"
+        ],
+        "bored": [
+          "发呆中…",
+          "云在飘…",
+          "想点什么呢",
+          "静一静",
+          "唔…"
+        ],
+        "sleep": [
+          "zzZ…",
+          "月色真好…",
+          "先歇一歇",
+          "梦里有仙鹤"
+        ],
+        "wake": [
+          "早安呀",
+          "又见面啦",
+          "精神满满~",
+          "新的一天~"
+        ],
+        "hungry": [
+          "肚子咕咕叫…",
+          "想吃点心",
+          "有没有糕点呀",
+          "有点饿了"
+        ],
+        "curious": [
+          "这是什么?",
+          "咦?",
+          "好有趣!",
+          "让我看看~",
+          "从没见过"
+        ],
+        "greet": [
+          "你好呀~",
+          "小来报到!",
+          "幸会幸会",
+          "欢迎来桌面~",
+          "嗨~"
+        ],
+        "excited": [
+          "哇!",
+          "太好看了!",
+          "冲呀!",
+          "好激动~"
+        ],
+        "sad": [
+          "呜…",
+          "有点难过",
+          "心里空空的",
+          "想一个人待一会"
+        ],
+        "sing": [
+          "啦啦啦~",
+          "风在耳边唱~",
+          "🌸"
+        ]
+      }
     }
   }
 }

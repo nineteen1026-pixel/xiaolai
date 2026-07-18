@@ -26,7 +26,23 @@ function imgToBase64(filePath) {
   } catch (e) { return ''; }
 }
 
-// 切换角色:注入图片+台词+移动风格到页面
+// 组装角色帧动画(待机/跑步等),转成 base64 注入页面
+function buildPetAnims(pet) {
+  if (!pet.anims) return null;
+  const anims = {};
+  if (pet.anims.idle) anims.idle = imgToBase64(pet.anims.idle);
+  // 优先注入整条跑步精灵图(一张),避免多帧 base64 过大导致切帧失败
+  if (pet.anims.runStrip) anims.runStrip = imgToBase64(pet.anims.runStrip);
+  if (pet.anims.runFrameCount) anims.runFrameCount = pet.anims.runFrameCount;
+  if (Array.isArray(pet.anims.run)) {
+    anims.run = pet.anims.run.map((p) => imgToBase64(p)).filter(Boolean);
+    if (!anims.runFrameCount) anims.runFrameCount = anims.run.length;
+  }
+  if (anims.runStrip && !anims.runFrameCount) anims.runFrameCount = 8;
+  return anims;
+}
+
+// 切换角色:注入图片+台词+移动风格+帧动画到页面
 function switchPet(name) {
   const pet = petsData.pets[name];
   if (!pet) return;
@@ -34,10 +50,11 @@ function switchPet(name) {
   const imgB64 = imgToBase64(pet.img);
   const linesJson = JSON.stringify(pet.lines).replace(/'/g, "\\'");
   const moveStyle = pet.moveStyle || 'walk';
+  const anims = buildPetAnims(pet);
   if (win && !win.isDestroyed()) {
     win.webContents.executeJavaScript(`
       if (window.__switchPet) {
-        window.__switchPet(${JSON.stringify(name)}, ${JSON.stringify(pet.name)}, ${JSON.stringify(imgB64)}, ${JSON.stringify(pet.emoji)}, '${linesJson}', ${JSON.stringify(moveStyle)});
+        window.__switchPet(${JSON.stringify(name)}, ${JSON.stringify(pet.name)}, ${JSON.stringify(imgB64)}, ${JSON.stringify(pet.emoji)}, '${linesJson}', ${JSON.stringify(moveStyle)}, ${JSON.stringify(anims)});
       }
     `).catch(() => {});
   }
@@ -214,16 +231,18 @@ function createWindow() {
     // 注入角色切换函数(含moveStyle差异化移动)
     win.webContents.executeJavaScript(`
       window.__moveStyle = 'walk';
-      window.__switchPet = function(name, displayName, imgB64, emoji, linesJson, moveStyle) {
+      window.__petAnims = null;
+      window.__switchPet = function(name, displayName, imgB64, emoji, linesJson, moveStyle, anims) {
         window.__petName = displayName;
         window.__petEmoji = emoji;
         window.__moveStyle = moveStyle || 'walk';
+        window.__petAnims = anims || null;
         try {
           window.__petLines = JSON.parse(linesJson);
           window.LINES = window.__petLines;
         } catch(e){}
         var img = document.getElementById('duckImg');
-        if (img) { img.src = imgB64; }
+        if (img) { img.src = (anims && anims.idle) ? anims.idle : imgB64; }
         var hint = document.getElementById('hint');
         if (hint) { hint.textContent = emoji + ' ' + displayName + ' 上桌啦!'; }
         // 覆盖decide:根据moveStyle调整动作权重(不同角色移动方式不同)
@@ -243,6 +262,7 @@ function createWindow() {
           else if (s === 'lazy')  { doWalk=0.08; doJump=0.02; doSleep=0.55; doAct=0.1; } // 卡比兽/妙蛙:懒
           else if (s === 'float') { doWalk=0.1;  doJump=0.05; doAct=0.35; }   // 瓦斯/胖丁:漂浮少走
           else if (s === 'wobble'){ doWalk=0.15; doJump=0.1; doAct=0.45; }    // 可达鸭:晃动
+          else if (s === 'human') { doWalk=0.7;  doJump=0;   doAct=0.2; }    // 码仔:拟人走路,不弹跳
           else                    { doWalk=0.4;  doJump=0.15; doAct=0.2; }    // walk:正常散步
           if (idleSec > 16 && doSleep > 0 && r < doSleep) {
             window.__petActLock = true;
